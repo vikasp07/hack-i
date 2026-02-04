@@ -98,7 +98,7 @@ const mockApiResponse = {
     carbon_sequestration: 10,
   },
   history: [],
-  predictions: null,
+  predictions: undefined,
   species: [],
   alerts: [],
   soilProfile: {

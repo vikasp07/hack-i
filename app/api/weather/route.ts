@@ -1,36 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { fetchWeatherData } from '@/lib/gis-tools'
+/**
+ * Weather API Route
+ * GET /api/weather?lat=<lat>&lon=<lon>
+ */
 
-const BACKEND_URL = process.env.BACKEND_URL
+import { NextRequest, NextResponse } from 'next/server';
+import { fetchWeatherData } from '@/lib/services/weather';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const lat = parseFloat(searchParams.get('lat') || '19.076')
-    const lng = parseFloat(searchParams.get('lng') || '72.878')
+    const searchParams = request.nextUrl.searchParams;
+    const latParam = searchParams.get('lat');
+    const lonParam = searchParams.get('lon');
 
-    // If external backend URL is configured, proxy the request
-    if (BACKEND_URL) {
-      const response = await fetch(
-        `${BACKEND_URL}/api/weather?lat=${lat}&lng=${lng}`
-      )
-
-      if (!response.ok) {
-        throw new Error(`Backend error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      return NextResponse.json(data)
+    if (!latParam || !lonParam) {
+      return NextResponse.json(
+        { error: 'Missing required parameters: lat and lon' },
+        { status: 400 }
+      );
     }
 
-    // Use internal GIS tools
-    const weatherData = await fetchWeatherData(lat, lng)
-    return NextResponse.json(weatherData)
-  } catch (error) {
-    console.error('Weather API error:', error)
+    const lat = parseFloat(latParam);
+    const lon = parseFloat(lonParam);
+
+    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return NextResponse.json(
+        { error: 'Invalid coordinates. Lat must be -90 to 90, lon must be -180 to 180' },
+        { status: 400 }
+      );
+    }
+
+    const data = await fetchWeatherData(lat, lon);
+
     return NextResponse.json(
-      { error: 'Failed to fetch weather data' },
+      {
+        success: true,
+        data
+      },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600'
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Weather API error:', error);
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch weather data'
+      },
       { status: 500 }
-    )
+    );
   }
 }

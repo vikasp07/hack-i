@@ -1,10 +1,10 @@
 /**
- * Soil API Route
- * GET /api/soil?lat=<lat>&lon=<lon>
+ * Forest API Route
+ * GET /api/forest?lat=<lat>&lon=<lon>
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchSoilData } from '@/lib/services/soil';
+import { fetchForestData } from '@/lib/services/forest';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await fetchSoilData(lat, lon);
+    const data = await fetchForestData(lat, lon);
 
     return NextResponse.json(
       {
@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Soil API error:', error);
+    console.error('Forest API error:', error);
     
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch soil data'
+        error: error instanceof Error ? error.message : 'Failed to fetch forest data'
       },
       { status: 500 }
     );

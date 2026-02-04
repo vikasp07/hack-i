@@ -1,10 +1,10 @@
 /**
- * Soil API Route
- * GET /api/soil?lat=<lat>&lon=<lon>
+ * NDVI API Route
+ * GET /api/ndvi?lat=<lat>&lon=<lon>&radius=<radius>
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchSoilData } from '@/lib/services/soil';
+import { fetchNDVIData } from '@/lib/services/ndvi';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const latParam = searchParams.get('lat');
     const lonParam = searchParams.get('lon');
+    const radiusParam = searchParams.get('radius');
 
     if (!latParam || !lonParam) {
       return NextResponse.json(
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
 
     const lat = parseFloat(latParam);
     const lon = parseFloat(lonParam);
+    const radius = radiusParam ? parseFloat(radiusParam) : 1;
 
     if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
       return NextResponse.json(
@@ -32,7 +34,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await fetchSoilData(lat, lon);
+    if (isNaN(radius) || radius < 0.1 || radius > 10) {
+      return NextResponse.json(
+        { error: 'Invalid radius. Must be between 0.1 and 10 km' },
+        { status: 400 }
+      );
+    }
+
+    const data = await fetchNDVIData(lat, lon, radius);
 
     return NextResponse.json(
       {
@@ -47,12 +56,12 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Soil API error:', error);
+    console.error('NDVI API error:', error);
     
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch soil data'
+        error: error instanceof Error ? error.message : 'Failed to fetch NDVI data'
       },
       { status: 500 }
     );

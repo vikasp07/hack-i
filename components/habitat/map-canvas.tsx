@@ -369,7 +369,7 @@ export function MapCanvas({
 
           // Create GeoJSON layer
           const forestLayer = L.geoJSON(geojsonData, {
-            style: (feature) => {
+            style: (feature: GeoJSON.Feature | undefined) => {
               const health = feature?.properties?.health || 'moderate'
               return {
                 fillColor: getColor(health),
@@ -379,7 +379,7 @@ export function MapCanvas({
                 fillOpacity: 0.25, // Increased from 0.15 for better visibility
               }
             },
-            onEachFeature: (feature, layer) => {
+            onEachFeature: (feature: GeoJSON.Feature, layer: L.Layer) => {
               const props = feature.properties
               if (props) {
                 // Create popup content
