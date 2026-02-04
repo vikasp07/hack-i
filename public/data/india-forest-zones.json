@@ -1,0 +1,225 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Western Ghats",
+        "state": "Karnataka, Kerala, Tamil Nadu, Goa, Maharashtra",
+        "health": "moderate",
+        "forestCover": 68,
+        "ndvi": 0.65,
+        "riskLevel": "medium",
+        "description": "Biodiversity hotspot with tropical evergreen forests"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [73.5, 8.0],
+          [77.5, 8.0],
+          [77.5, 21.0],
+          [73.5, 21.0],
+          [73.5, 8.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Eastern Ghats",
+        "state": "Odisha, Andhra Pradesh, Tamil Nadu",
+        "health": "poor",
+        "forestCover": 42,
+        "ndvi": 0.45,
+        "riskLevel": "high",
+        "description": "Discontinuous hill ranges with dry deciduous forests"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [78.0, 11.5],
+          [84.5, 11.5],
+          [84.5, 22.0],
+          [78.0, 22.0],
+          [78.0, 11.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Himalayan Forests",
+        "state": "Uttarakhand, Himachal Pradesh, J&K",
+        "health": "healthy",
+        "forestCover": 75,
+        "ndvi": 0.72,
+        "riskLevel": "low",
+        "description": "Alpine and temperate forests with high biodiversity"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [73.0, 28.0],
+          [89.0, 28.0],
+          [89.0, 36.0],
+          [73.0, 36.0],
+          [73.0, 28.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Central Indian Forests",
+        "state": "Madhya Pradesh, Chhattisgarh, Maharashtra",
+        "health": "moderate",
+        "forestCover": 55,
+        "ndvi": 0.58,
+        "riskLevel": "medium",
+        "description": "Sal and teak forests, tiger reserves"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [74.0, 17.0],
+          [84.0, 17.0],
+          [84.0, 26.0],
+          [74.0, 26.0],
+          [74.0, 17.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Northeast Forests",
+        "state": "Assam, Meghalaya, Arunachal Pradesh",
+        "health": "healthy",
+        "forestCover": 78,
+        "ndvi": 0.75,
+        "riskLevel": "low",
+        "description": "Tropical rainforests with highest biodiversity in India"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [88.0, 22.0],
+          [97.5, 22.0],
+          [97.5, 29.5],
+          [88.0, 29.5],
+          [88.0, 22.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sundarbans Mangroves",
+        "state": "West Bengal",
+        "health": "moderate",
+        "forestCover": 62,
+        "ndvi": 0.60,
+        "riskLevel": "high",
+        "description": "World's largest mangrove forest, UNESCO World Heritage Site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [88.0, 21.5],
+          [89.5, 21.5],
+          [89.5, 22.5],
+          [88.0, 22.5],
+          [88.0, 21.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Deccan Plateau Forests",
+        "state": "Karnataka, Telangana, Andhra Pradesh",
+        "health": "poor",
+        "forestCover": 38,
+        "ndvi": 0.42,
+        "riskLevel": "high",
+        "description": "Dry deciduous forests facing degradation"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [74.0, 12.0],
+          [80.0, 12.0],
+          [80.0, 19.0],
+          [74.0, 19.0],
+          [74.0, 12.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Aravalli Range",
+        "state": "Rajasthan, Haryana, Gujarat",
+        "health": "critical",
+        "forestCover": 25,
+        "ndvi": 0.32,
+        "riskLevel": "critical",
+        "description": "Ancient mountain range with sparse dry forests"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [72.5, 23.0],
+          [76.5, 23.0],
+          [76.5, 28.5],
+          [72.5, 28.5],
+          [72.5, 23.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Andaman & Nicobar Islands",
+        "state": "Andaman & Nicobar",
+        "health": "healthy",
+        "forestCover": 82,
+        "ndvi": 0.78,
+        "riskLevel": "low",
+        "description": "Tropical evergreen forests with endemic species"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [92.0, 6.5],
+          [94.0, 6.5],
+          [94.0, 14.0],
+          [92.0, 14.0],
+          [92.0, 6.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Vindhya Range Forests",
+        "state": "Madhya Pradesh, Uttar Pradesh",
+        "health": "moderate",
+        "forestCover": 48,
+        "ndvi": 0.52,
+        "riskLevel": "medium",
+        "description": "Mixed deciduous forests with wildlife corridors"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [78.0, 23.0],
+          [83.0, 23.0],
+          [83.0, 26.0],
+          [78.0, 26.0],
+          [78.0, 23.0]
+        ]]
+      }
+    }
+  ]
+}

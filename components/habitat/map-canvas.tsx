@@ -11,6 +11,7 @@ import {
   Target,
   MapPin,
   Scan,
+  Leaf,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -310,6 +311,7 @@ export function MapCanvas({
   const [showForestCover, setShowForestCover] = useState(true)
   const [showStateBoundaries, setShowStateBoundaries] = useState(true)
   const [showProtectedAreas, setShowProtectedAreas] = useState(false)
+  const [showForestZones, setShowForestZones] = useState(true) // New: Show Indian forest zones by default
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null)
   const [detectedSites, setDetectedSites] = useState<AfforestationSite[]>([])
   const [selectedSite, setSelectedSite] = useState<AfforestationSite | null>(
@@ -324,10 +326,238 @@ export function MapCanvas({
   const overlayLayerRef = useRef<L.ImageOverlay | null>(null)
   const siteLayersRef = useRef<L.Rectangle[]>([])
   const groupLayerRef = useRef<L.Rectangle | null>(null)
+  const forestZonesLayerRef = useRef<L.GeoJSON | null>(null) // Reference for forest zones layer
+  const labelsLayerRef = useRef<L.TileLayer | null>(null) // Reference for labels overlay
+  const forestCoverLayerRef = useRef<L.TileLayer | null>(null) // Reference for forest cover overlay
+  const boundariesLayerRef = useRef<L.TileLayer | null>(null) // Reference for boundaries overlay
+  const protectedAreasLayerRef = useRef<L.LayerGroup | null>(null) // Reference for protected areas markers
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Load Indian Forest Zones
+  useEffect(() => {
+    if (!mapRef.current || !isClient) return
+
+    const loadForestZones = async () => {
+      try {
+        const response = await fetch('/data/india-forest-zones.json')
+        const geojsonData = await response.json()
+
+        // Remove existing forest zones layer
+        if (forestZonesLayerRef.current) {
+          mapRef.current?.removeLayer(forestZonesLayerRef.current)
+        }
+
+        if (showForestZones) {
+          // Color mapping based on health status
+          const getColor = (health: string) => {
+            switch (health) {
+              case 'healthy':
+                return '#10b981' // Green
+              case 'moderate':
+                return '#f59e0b' // Yellow/Amber
+              case 'poor':
+                return '#f97316' // Orange
+              case 'critical':
+                return '#ef4444' // Red
+              default:
+                return '#6b7280' // Gray
+            }
+          }
+
+          // Create GeoJSON layer
+          const forestLayer = L.geoJSON(geojsonData, {
+            style: (feature) => {
+              const health = feature?.properties?.health || 'moderate'
+              return {
+                fillColor: getColor(health),
+                weight: 2,
+                opacity: 0.9,
+                color: getColor(health),
+                fillOpacity: 0.25, // Increased from 0.15 for better visibility
+              }
+            },
+            onEachFeature: (feature, layer) => {
+              const props = feature.properties
+              if (props) {
+                // Create popup content
+                const popupContent = `
+                  <div class="forest-zone-popup">
+                    <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #f8fafc;">
+                      ${props.name}
+                    </h3>
+                    <div style="font-size: 12px; line-height: 1.6; color: #cbd5e1;">
+                      <p style="margin: 4px 0;"><strong>States:</strong> ${props.state}</p>
+                      <p style="margin: 4px 0;"><strong>Forest Cover:</strong> ${props.forestCover}%</p>
+                      <p style="margin: 4px 0;"><strong>NDVI:</strong> ${props.ndvi}</p>
+                      <p style="margin: 4px 0;"><strong>Risk Level:</strong> 
+                        <span style="color: ${getColor(props.health)}; font-weight: 600;">
+                          ${props.riskLevel.toUpperCase()}
+                        </span>
+                      </p>
+                      <p style="margin: 8px 0 0 0; font-style: italic; color: #94a3b8;">
+                        ${props.description}
+                      </p>
+                    </div>
+                  </div>
+                `
+                layer.bindPopup(popupContent, {
+                  maxWidth: 300,
+                  className: 'forest-zone-popup-container',
+                })
+
+                // Hover effects
+                layer.on('mouseover', function (this: L.Path) {
+                  this.setStyle({
+                    fillOpacity: 0.45, // Increased from 0.35
+                    weight: 3,
+                  })
+                })
+                layer.on('mouseout', function (this: L.Path) {
+                  this.setStyle({
+                    fillOpacity: 0.25, // Increased from 0.15
+                    weight: 2,
+                  })
+                })
+              }
+            },
+          })
+
+          forestLayer.addTo(mapRef.current!)
+          forestZonesLayerRef.current = forestLayer
+        }
+      } catch (error) {
+        console.error('Failed to load forest zones:', error)
+      }
+    }
+
+    loadForestZones()
+  }, [isClient, showForestZones])
+
+  // Forest Cover Overlay (General forest density visualization)
+  useEffect(() => {
+    if (!mapRef.current || !isClient) return
+
+    // Remove existing forest cover layer
+    if (forestCoverLayerRef.current) {
+      mapRef.current.removeLayer(forestCoverLayerRef.current)
+      forestCoverLayerRef.current = null
+    }
+
+    if (showForestCover) {
+      // Add a semi-transparent green overlay to show general forest areas
+      // Using OpenStreetMap's natural=wood layer visualization
+      const forestCoverLayer = L.tileLayer(
+        'https://tiles.wmflabs.org/osm-no-labels/{z}/{x}/{y}.png',
+        {
+          attribution: '',
+          opacity: 0.3,
+          maxZoom: 18,
+        }
+      )
+      forestCoverLayer.addTo(mapRef.current)
+      forestCoverLayerRef.current = forestCoverLayer
+    }
+  }, [isClient, showForestCover])
+
+  // State Boundaries Overlay
+  useEffect(() => {
+    if (!mapRef.current || !isClient) return
+
+    // Remove existing boundaries layer
+    if (boundariesLayerRef.current) {
+      mapRef.current.removeLayer(boundariesLayerRef.current)
+      boundariesLayerRef.current = null
+    }
+
+    if (showStateBoundaries) {
+      // Add state boundary lines using CartoDB boundaries overlay
+      const boundariesLayer = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        {
+          attribution: '',
+          opacity: 0.5,
+          maxZoom: 20,
+        }
+      )
+      boundariesLayer.addTo(mapRef.current)
+      boundariesLayerRef.current = boundariesLayer
+    }
+  }, [isClient, showStateBoundaries])
+
+  // Protected Areas (Major National Parks and Wildlife Sanctuaries)
+  useEffect(() => {
+    if (!mapRef.current || !isClient) return
+
+    // Remove existing protected areas
+    if (protectedAreasLayerRef.current) {
+      mapRef.current.removeLayer(protectedAreasLayerRef.current)
+      protectedAreasLayerRef.current = null
+    }
+
+    if (showProtectedAreas) {
+      // Major protected areas in India
+      const protectedAreas = [
+        { name: 'Jim Corbett National Park', lat: 29.5317, lng: 78.7750, state: 'Uttarakhand' },
+        { name: 'Kaziranga National Park', lat: 26.5775, lng: 93.1711, state: 'Assam' },
+        { name: 'Ranthambore National Park', lat: 26.0173, lng: 76.5026, state: 'Rajasthan' },
+        { name: 'Sundarbans National Park', lat: 21.9497, lng: 88.9997, state: 'West Bengal' },
+        { name: 'Bandipur National Park', lat: 11.6667, lng: 76.5833, state: 'Karnataka' },
+        { name: 'Periyar National Park', lat: 9.4647, lng: 77.2350, state: 'Kerala' },
+        { name: 'Gir National Park', lat: 21.1333, lng: 70.8000, state: 'Gujarat' },
+        { name: 'Kanha National Park', lat: 22.3333, lng: 80.6167, state: 'Madhya Pradesh' },
+        { name: 'Bandhavgarh National Park', lat: 23.7000, lng: 81.0333, state: 'Madhya Pradesh' },
+        { name: 'Nagarhole National Park', lat: 12.0000, lng: 76.1000, state: 'Karnataka' },
+      ]
+
+      const layerGroup = L.layerGroup()
+
+      protectedAreas.forEach((area) => {
+        // Create custom icon for protected areas
+        const protectedIcon = L.divIcon({
+          className: 'protected-area-marker',
+          html: `
+            <div style="
+              background: rgba(34, 197, 94, 0.9);
+              border: 2px solid #fff;
+              border-radius: 50%;
+              width: 16px;
+              height: 16px;
+              box-shadow: 0 2px 8px rgba(34, 197, 94, 0.5);
+            "></div>
+          `,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        })
+
+        const marker = L.marker([area.lat, area.lng], { icon: protectedIcon })
+        
+        marker.bindPopup(`
+          <div style="font-family: system-ui; padding: 4px;">
+            <h4 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #22c55e;">
+              🌳 ${area.name}
+            </h4>
+            <p style="margin: 0; font-size: 11px; color: #64748b;">
+              ${area.state}
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 10px; color: #94a3b8;">
+              Protected Wildlife Area
+            </p>
+          </div>
+        `, {
+          maxWidth: 200,
+          className: 'protected-area-popup',
+        })
+
+        marker.addTo(layerGroup)
+      })
+
+      layerGroup.addTo(mapRef.current)
+      protectedAreasLayerRef.current = layerGroup
+    }
+  }, [isClient, showProtectedAreas])
 
   // Initialize map
   useEffect(() => {
@@ -337,9 +567,13 @@ export function MapCanvas({
       mapRef.current.remove()
     }
 
+    // Center on India by default (20.5937°N, 78.9629°E)
+    // Zoom level 5 shows entire India, zoom 13 for detailed view
+    const initialZoom = lat === 20.5937 && lng === 78.9629 ? 5 : 13
+    
     const map = L.map(mapContainerRef.current, {
       center: [lat, lng],
-      zoom: 13,
+      zoom: initialZoom,
       zoomControl: false,
     })
 
@@ -410,52 +644,84 @@ export function MapCanvas({
     const map = mapRef.current
 
     // Remove existing base layers
-    map.eachLayer((layer) => {
+    map.eachLayer((layer: L.Layer) => {
       if (layer instanceof L.TileLayer) {
         const attr = (layer as L.TileLayer).options.attribution || ''
         if (
           attr.includes('OpenStreetMap') ||
           attr.includes('Esri') ||
-          attr.includes('OpenTopoMap')
+          attr.includes('OpenTopoMap') ||
+          attr.includes('CartoDB')
         ) {
           // Check if it's a base layer (not an overlay)
-          const url = (layer as L.TileLayer).getTileUrl?.({ x: 0, y: 0, z: 0 })
-          if (url && !url.includes('labels') && !url.includes('boundaries')) {
-            map.removeLayer(layer)
+          const tileLayer = layer as L.TileLayer
+          if (tileLayer.getTileUrl) {
+            try {
+              const url = tileLayer.getTileUrl(L.point(0, 0) as any)
+              if (url && !url.includes('labels') && !url.includes('boundaries')) {
+                map.removeLayer(layer)
+              }
+            } catch (e) {
+              // Ignore getTileUrl errors
+            }
           }
         }
       }
     })
 
-    // Add new base layer
+    // Add new base layer with best quality tiles for India
     let newLayer: L.TileLayer
     if (activeLayer === 'osm') {
+      // Using CartoDB Voyager - cleaner, better for India, works great with Leaflet
       newLayer = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
         {
-          attribution: '&copy; OpenStreetMap',
-          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20,
         }
       )
     } else if (activeLayer === 'satellite') {
+      // Esri World Imagery - best free satellite tiles
       newLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {
-          attribution: 'Tiles &copy; Esri',
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
           maxZoom: 19,
         }
       )
     } else {
+      // OpenTopoMap - excellent terrain visualization
       newLayer = L.tileLayer(
         'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
         {
-          attribution: '&copy; OpenTopoMap',
+          attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
           maxZoom: 17,
         }
       )
     }
     newLayer.addTo(map)
     newLayer.bringToBack()
+
+    // Remove existing labels layer
+    if (labelsLayerRef.current) {
+      map.removeLayer(labelsLayerRef.current)
+      labelsLayerRef.current = null
+    }
+
+    // Add labels overlay for all base layers (especially important for satellite view)
+    // Using CartoDB labels which show cities, states, and boundaries
+    const labelsLayer = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        pane: 'overlayPane', // Ensure labels are on top
+      }
+    )
+    labelsLayer.addTo(map)
+    labelsLayerRef.current = labelsLayer
   }, [activeLayer])
 
   // Update marker and circle position
@@ -666,10 +932,21 @@ export function MapCanvas({
             <DropdownMenuLabel>Map Overlays</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => setShowForestCover(!showForestCover)}
+              onClick={() => setShowForestZones(!showForestZones)}
             >
               <Trees className="mr-2 h-4 w-4" />
-              Forest Cover
+              Indian Forest Zones
+              {showForestZones && (
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  On
+                </Badge>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setShowForestCover(!showForestCover)}
+            >
+              <Leaf className="mr-2 h-4 w-4" />
+              General Forest Cover
               {showForestCover && (
                 <Badge variant="secondary" className="ml-auto text-xs">
                   On
@@ -680,7 +957,7 @@ export function MapCanvas({
               onClick={() => setShowStateBoundaries(!showStateBoundaries)}
             >
               <Layers className="mr-2 h-4 w-4" />
-              Boundaries
+              State Boundaries
               {showStateBoundaries && (
                 <Badge variant="secondary" className="ml-auto text-xs">
                   On
@@ -691,7 +968,7 @@ export function MapCanvas({
               onClick={() => setShowProtectedAreas(!showProtectedAreas)}
             >
               <Target className="mr-2 h-4 w-4" />
-              Protected Areas
+              National Parks
               {showProtectedAreas && (
                 <Badge variant="secondary" className="ml-auto text-xs">
                   On
@@ -857,6 +1134,41 @@ export function MapCanvas({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Forest Zones Legend - Top Left (when no sites detected) */}
+      {showForestZones && !showSuitabilityOverlay && (
+        <div className="absolute left-4 top-4 z-[1000] rounded-lg bg-card/90 p-4 backdrop-blur-sm border border-border/50 max-w-[240px]">
+          <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Trees className="h-4 w-4 text-primary" />
+            Indian Forest Zones
+          </h4>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <div className="h-3 w-3 rounded-sm bg-[#10b981]" />
+              <span className="text-muted-foreground">Healthy (70%+ cover)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="h-3 w-3 rounded-sm bg-[#f59e0b]" />
+              <span className="text-muted-foreground">Moderate (50-70%)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="h-3 w-3 rounded-sm bg-[#f97316]" />
+              <span className="text-muted-foreground">Poor (30-50%)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="h-3 w-3 rounded-sm bg-[#ef4444]" />
+              <span className="text-muted-foreground">Critical (&lt;30%)</span>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-border/50 mt-3">
+            <p className="text-xs text-muted-foreground">
+              Click on any zone for detailed information
+            </p>
+          </div>
         </div>
       )}
 

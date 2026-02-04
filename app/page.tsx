@@ -115,9 +115,9 @@ export default function HabitatDashboard() {
   // Phase state
   const [activePhase, setActivePhase] = useState<Phase>('planning')
 
-  // Query state
-  const [lat, setLat] = useState('19.076')
-  const [lng, setLng] = useState('72.878')
+  // Query state - Default to center of India
+  const [lat, setLat] = useState('20.5937')
+  const [lng, setLng] = useState('78.9629')
   const [radius, setRadius] = useState('5')
 
   // Data state
@@ -137,8 +137,8 @@ export default function HabitatDashboard() {
     setIsPredictionLoading(true)
     try {
       const predictions = await getPredictions({
-        lat: parseFloat(lat) || 19.076,
-        lng: parseFloat(lng) || 72.878,
+        lat: parseFloat(lat) || 20.5937,
+        lng: parseFloat(lng) || 78.9629,
         timelineMonths: 36,
         selectedSpecies: selectedSpecies.map(s => s.name),
       })
@@ -154,14 +154,14 @@ export default function HabitatDashboard() {
     setIsLoading(true)
     try {
       const monitoringData = await getMonitoringData({
-        lat: parseFloat(lat) || 19.076,
-        lng: parseFloat(lng) || 72.878,
+        lat: parseFloat(lat) || 20.5937,
+        lng: parseFloat(lng) || 78.9629,
       })
       setData({
         status: 'success',
         coordinates: {
-          lat: parseFloat(lat) || 19.076,
-          lng: parseFloat(lng) || 72.878,
+          lat: parseFloat(lat) || 20.5937,
+          lng: parseFloat(lng) || 78.9629,
         },
         ...monitoringData,
         species: [],
@@ -180,8 +180,8 @@ export default function HabitatDashboard() {
       setData({
         status: 'success',
         coordinates: {
-          lat: parseFloat(lat) || 19.076,
-          lng: parseFloat(lng) || 72.878,
+          lat: parseFloat(lat) || 20.5937,
+          lng: parseFloat(lng) || 78.9629,
         },
         ...mockApiResponse,
       })
@@ -195,8 +195,8 @@ export default function HabitatDashboard() {
     setShowSuitabilityOverlay(false)
     try {
       const analysisData = await analyzeSectorApi({
-        lat: parseFloat(lat) || 19.076,
-        lng: parseFloat(lng) || 72.878,
+        lat: parseFloat(lat) || 20.5937,
+        lng: parseFloat(lng) || 78.9629,
         radius: parseFloat(radius) || 5,
       })
       setData({
@@ -347,8 +347,8 @@ export default function HabitatDashboard() {
                 />
               ) : (
                 <MapCanvas
-                  lat={parseFloat(lat) || 19.076}
-                  lng={parseFloat(lng) || 72.878}
+                  lat={parseFloat(lat) || 20.5937}
+                  lng={parseFloat(lng) || 78.9629}
                   radius={parseFloat(radius) || 5}
                   onLocationClick={handleMapClick}
                   isAnalyzing={isAnalyzing}
@@ -382,7 +382,7 @@ export default function HabitatDashboard() {
                       value={lat}
                       onChange={(e) => setLat(e.target.value)}
                       className="h-9 font-mono text-sm bg-background/50"
-                      placeholder="19.076"
+                      placeholder="20.5937"
                     />
                   </div>
                   <div>
@@ -397,7 +397,7 @@ export default function HabitatDashboard() {
                       value={lng}
                       onChange={(e) => setLng(e.target.value)}
                       className="h-9 font-mono text-sm bg-background/50"
-                      placeholder="72.878"
+                      placeholder="78.9629"
                     />
                   </div>
                   <div>
@@ -600,8 +600,8 @@ export default function HabitatDashboard() {
                       </TabsList>
                       <TabsContent value="ai" className="mt-3">
                         <AIChat
-                          initialLat={parseFloat(lat) || 19.076}
-                          initialLng={parseFloat(lng) || 72.878}
+                          initialLat={parseFloat(lat) || 20.5937}
+                          initialLng={parseFloat(lng) || 78.9629}
                           className="h-[400px]"
                         />
                       </TabsContent>
@@ -647,8 +647,8 @@ export default function HabitatDashboard() {
                     {/* AI Chat available even without analysis */}
                     <div className="flex-1 min-h-0">
                       <AIChat
-                        initialLat={parseFloat(lat) || 19.076}
-                        initialLng={parseFloat(lng) || 72.878}
+                        initialLat={parseFloat(lat) || 20.5937}
+                        initialLng={parseFloat(lng) || 78.9629}
                         className="h-full"
                       />
                     </div>

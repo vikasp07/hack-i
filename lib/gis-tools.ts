@@ -1,12 +1,13 @@
 'use server'
 
 // Sentinel Hub Authentication
-async function getSentinelToken(): Promise<string> {
+async function getSentinelToken(): Promise<string | null> {
   const clientId = process.env.SENTINELHUB_CLIENT_ID
   const clientSecret = process.env.SENTINELHUB_CLIENT_SECRET
 
   if (!clientId || !clientSecret) {
-    throw new Error('Sentinel Hub credentials not configured')
+    console.warn('Sentinel Hub credentials not configured')
+    return null
   }
 
   const response = await fetch(
@@ -23,7 +24,8 @@ async function getSentinelToken(): Promise<string> {
   )
 
   if (!response.ok) {
-    throw new Error(`Sentinel Hub auth failed: ${response.statusText}`)
+    console.error(`Sentinel Hub auth failed: ${response.statusText}`)
+    return null
   }
 
   const data = await response.json()
@@ -44,6 +46,11 @@ export async function fetchSentinelData(
 }> {
   try {
     const token = await getSentinelToken()
+
+    if (!token) {
+      console.warn('Sentinel Hub token not available, using mock data')
+      throw new Error('No token available')
+    }
 
     // Calculate bounding box from center + radius
     const latDelta = radius / 111.32
@@ -194,7 +201,19 @@ export async function fetchWeatherData(
   const apiKey = process.env.OPENWEATHER_API_KEY
 
   if (!apiKey) {
-    throw new Error('OpenWeather API key not configured')
+    console.warn('OpenWeather API key not configured, using mock data')
+    return {
+      temperature: 28,
+      humidity: 65,
+      rainfall: 2.5,
+      windSpeed: 12,
+      conditions: 'partly cloudy',
+      forecast: [
+        { date: new Date().toISOString().split('T')[0], temp: 28, rain: 2 },
+        { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], temp: 27, rain: 5 },
+        { date: new Date(Date.now() + 172800000).toISOString().split('T')[0], temp: 29, rain: 0 },
+      ],
+    }
   }
 
   try {

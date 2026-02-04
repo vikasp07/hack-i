@@ -39,7 +39,7 @@ interface Message {
 interface ToolCall {
   name: string
   args: Record<string, unknown>
-  result?: unknown
+  result?: Record<string, unknown> | string | number | boolean | null
   state: 'calling' | 'completed' | 'error'
 }
 
@@ -68,6 +68,14 @@ function ToolInvocation({ toolCall }: { toolCall: ToolCall }) {
   const hasOutput = toolCall.state === 'completed'
   const hasError = toolCall.state === 'error'
 
+  const getToolIcon = (name: string): React.ReactElement => {
+    const icon = toolIcons[name]
+    if (icon && React.isValidElement(icon)) {
+      return icon
+    }
+    return <Sparkles className="h-3.5 w-3.5" />
+  }
+
   return (
     <div className="my-2 rounded-lg border border-border/50 bg-secondary/30 p-3">
       <div className="flex items-center gap-2">
@@ -84,7 +92,7 @@ function ToolInvocation({ toolCall }: { toolCall: ToolCall }) {
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            toolIcons[toolCall.name] || <Sparkles className="h-3.5 w-3.5" />
+            getToolIcon(toolCall.name)
           )}
         </div>
         <div className="flex-1">
@@ -109,7 +117,9 @@ function ToolInvocation({ toolCall }: { toolCall: ToolCall }) {
       {hasOutput && toolCall.result && (
         <div className="mt-3 rounded-md bg-background/50 p-2 text-xs">
           <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-muted-foreground">
-            {JSON.stringify(toolCall.result, null, 2)}
+            {typeof toolCall.result === 'object' 
+              ? JSON.stringify(toolCall.result, null, 2)
+              : String(toolCall.result)}
           </pre>
         </div>
       )}
@@ -221,7 +231,9 @@ function useCustomChat() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to get response')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Chat API error:', errorData)
+        throw new Error(errorData.error || 'Failed to get response')
       }
 
       const reader = response.body?.getReader()
@@ -304,12 +316,16 @@ function useCustomChat() {
       }
     } catch (error) {
       console.error('Chat error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
       setMessages(prev => [
         ...prev,
         {
           id: `error-${Date.now()}`,
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: errorMessage.includes('API key') || errorMessage.includes('configured')
+            ? errorMessage
+            : 'Sorry, I encountered an error. Please try again or check if API keys are configured.',
         },
       ])
     } finally {

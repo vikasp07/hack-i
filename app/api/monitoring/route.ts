@@ -6,8 +6,8 @@ const BACKEND_URL = process.env.BACKEND_URL
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const lat = parseFloat(searchParams.get('lat') || '19.076')
-    const lng = parseFloat(searchParams.get('lng') || '72.878')
+    const lat = parseFloat(searchParams.get('lat') || '20.5937')
+    const lng = parseFloat(searchParams.get('lng') || '78.9629')
 
     // If external backend URL is configured, proxy the request
     if (BACKEND_URL) {
@@ -23,11 +23,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data)
     }
 
-    // Fetch real-time data
-    const [weatherData, deforestationData] = await Promise.all([
-      fetchWeatherData(lat, lng),
-      fetchDeforestationAlerts(lat, lng, 10),
-    ])
+    // Fetch real-time data with fallback handling
+    let weatherData
+    let deforestationData
+    
+    try {
+      weatherData = await fetchWeatherData(lat, lng)
+    } catch (error) {
+      console.warn('Weather data fetch failed, using defaults:', error)
+      weatherData = {
+        temperature: 28,
+        humidity: 65,
+        rainfall: 2.5,
+        windSpeed: 12,
+        conditions: 'partly cloudy',
+        forecast: []
+      }
+    }
+
+    try {
+      deforestationData = await fetchDeforestationAlerts(lat, lng, 10)
+    } catch (error) {
+      console.warn('Deforestation data fetch failed, using defaults:', error)
+      deforestationData = {
+        totalAlerts: 0,
+        recentAlerts: 0,
+        alertsByMonth: [],
+        hotspots: []
+      }
+    }
 
     // Generate monitoring response
     const response = {
@@ -48,10 +72,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response)
   } catch (error) {
     console.error('Monitoring data error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch monitoring data' },
-      { status: 500 }
-    )
+    
+    // Return fallback data instead of error
+    return NextResponse.json({
+      metrics: {
+        health_score: 75,
+        ndvi_current: 0.6,
+        soil_ph: 6.5,
+        moisture_index: 50,
+        lst_temp: 28,
+        aqi: 80,
+        forest_cover: 40,
+        carbon_sequestration: 120,
+      },
+      history: generateHistoryData(),
+      alerts: [{
+        id: `info-${Date.now()}`,
+        type: 'info' as const,
+        message: 'Using simulated data - configure API keys for real-time data',
+        timestamp: new Date().toISOString(),
+      }],
+    })
   }
 }
 
