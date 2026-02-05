@@ -32,10 +32,6 @@ export const env = {
   
   // Cache Settings
   cacheDuration: parseInt(process.env.CACHE_DURATION || '3600'),
-  
-  // Finternet Payment API
-  finternetApiKey: process.env.FINTERNET_API_KEY || '',
-  finternetApiUrl: process.env.FINTERNET_API_URL || 'https://api.fmm.finternetlab.io/v1',
 } as const;
 
 // Validation helper
